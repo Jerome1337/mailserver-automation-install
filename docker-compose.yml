@@ -1,0 +1,71 @@
+version: '2'
+
+services:
+  os:
+    image: debian
+    volumes:
+      - .:/code
+      - ./docker/conf/nginx_vhost.conf:/etc/nginx/conf.d/app.conf:ro
+      - ./docker/conf/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
+      - ./docker/conf/php.ini:/usr/local/etc/php/php.ini:ro
+
+  nginx:
+    image: nginx
+    ports:
+      - 5000:5000
+    volumes_from:
+      - os
+    links:
+      - fpm
+
+  fpm:
+    build: docker/php-fpm
+    volumes_from:
+      - os   
+    links:
+      - mysql     
+    env_file:     
+      - docker-compose.env
+
+  mysql:
+    image: mysql:5.6
+    volumes_from:     
+      - os   
+    environment:     
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+
+  rethink:
+    image: rethinkdb:latest
+    ports:
+      - 58080:8080
+      - 58015:28015
+      - 59015:29015
+
+  nodejs:
+      image: node:latest
+      volumes:
+        - ./src/app:/usr/src/app
+      working_dir: /usr/src/app
+      command: npm start
+      ports:
+        - 50000:3000
+      depends_on:
+        - rethink
+
+  mail:
+    image: tvial/docker-mailserver:latest
+    hostname: mail
+    domainname: domain.com
+    container_name: mail
+    ports:
+      - 25:25
+      - 143:143
+      - 587:587
+      - 993:993
+    volumes:
+      - maildata:/var/mail
+      - ./config/:/tmp/docker-mailserver/
+
+volumes:
+  maildata:
+    driver: local

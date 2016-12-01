@@ -1,0 +1,6 @@
+# IDE files / folders
+.idea
+
+# Project
+config
+docker-compose.env

@@ -1,70 +1,149 @@
 version: '2'
 
 services:
+  # Debian
   os:
     image: debian
+    container_name: debian
     volumes:
       - .:/code
       - ./docker/conf/nginx_vhost.conf:/etc/nginx/conf.d/app.conf:ro
       - ./docker/conf/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
       - ./docker/conf/php.ini:/usr/local/etc/php/php.ini:ro
 
-  nginx:
-    image: nginx
-    ports:
-      - 5000:5000
-    volumes_from:
-      - os
-    links:
-      - fpm
+#  nginx:
+#    image: nginx
+#    container_name: nginx
+#    ports:
+#      - 5000:5000
+#    volumes_from:
+#      - os
+#    links:
+#      - fpm
+#
+#  fpm:
+#    build: docker/php-fpm
+#    container_name: fpm
+#    volumes_from:
+#      - os
+#    links:
+#      - mysql
+#    env_file:
+#      - docker-compose.env
+#
+#  mysql:
+#    image: mysql:5.6
+#    container_name: mysql
+#    volumes_from:
+#      - os
+#    environment:
+#      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
 
-  fpm:
-    build: docker/php-fpm
-    volumes_from:
-      - os   
-    links:
-      - mysql     
-    env_file:     
-      - docker-compose.env
-
-  mysql:
-    image: mysql:5.6
-    volumes_from:     
-      - os   
-    environment:     
-      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-
+  # Rethink DB
   rethink:
     image: rethinkdb:latest
+    container_name: rethink
     ports:
       - 58080:8080
       - 58015:28015
       - 59015:29015
 
+  # NodeJS
   nodejs:
-      image: node:latest
-      volumes:
-        - ./src/app:/usr/src/app
-      working_dir: /usr/src/app
-      command: npm start
-      ports:
-        - 50000:3000
-      depends_on:
-        - rethink
-
-  mail:
-    image: tvial/docker-mailserver:latest
-    hostname: mail
-    domainname: domain.com
-    container_name: mail
-    ports:
-      - 25:25
-      - 143:143
-      - 587:587
-      - 993:993
+    image: node:boron
+    container_name: nodejs
     volumes:
-      - maildata:/var/mail
-      - ./config/:/tmp/docker-mailserver/
+      - ./src/app:/usr/src/app
+    working_dir: /usr/src/app
+    command: npm start
+    ports:
+      - 50000:3000
+    depends_on:
+      - rethink
+
+  mailserver:
+    image: hardware/mailserver
+    container_name: mailserver
+    domainname: jeromepogeant.com
+    hostname: mail
+    ports:
+      - "25:25"     # SMTP                - Required
+      - "143:143"   # IMAP       STARTTLS - Optional - For webmails/desktop clients
+      - "587:587"   # Submission STARTTLS - Optional - For webmails/desktop clients
+      - "993:993"   # IMAPS      SSL/TLS  - Optional - For webmails/desktop clients
+      - "4190:4190" # SIEVE      STARTTLS - Optional - Recommended for mail filtering
+    environment:
+      - DBPASS=postfix
+    volumes:
+      - /mnt/docker/mail/mail:/var/mail
+      - /mnt/docker/mail/opendkim:/etc/opendkim/keys
+    depends_on:
+      - mariadb
+
+  # Control panel
+  postfixadmin:
+    image: hardware/postfixadmin
+    container_name: postfixadmin
+    domainname: jeromepogeant.com
+    hostname: mail
+    environment:
+      - DBPASS=postfix
+    depends_on:
+      - mailserver
+      - mariadb
+
+  # Webmail
+  rainloop:
+    image: hardware/rainloop
+    container_name: rainloop
+    volumes:
+      - /mnt/docker/rainloop:/rainloop/data
+    depends_on:
+      - mailserver
+      - mariadb
+
+  # Web server
+  # Configuration : https://github.com/hardware/mailserver/wiki/Reverse-proxy-configuration
+  nginx:
+    image: wonderfall/boring-nginx
+    container_name: nginx
+    ports:
+      - "8000:8000"
+      - "443:4430"
+    volumes:
+      - /mnt/docker/nginx/sites-enabled:/sites-enabled
+      - /mnt/docker/nginx/conf:/conf.d
+      - /mnt/docker/nginx/log:/var/log/nginx
+      - /mnt/docker/nginx/certs:/certs
+    volumes_from:
+      - os
+    depends_on:
+      - postfixadmin
+      - rainloop
+
+  # MySQL Database
+  mariadb:
+    image: mariadb:10.1
+    container_name: mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=postfix
+      - MYSQL_USER=postfix
+      - MYSQL_PASSWORD=postfix
+    volumes:
+      - /mnt/docker/mysql/db:/var/lib/mysql
+
+  # PhpMyAdmin
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: phpmyadmin
+    links:
+      - mariadb:db
+    ports:
+      - '8100:80'
+    environment:
+      - PMA_USER=root
+      - PMA_PASSWORD=root
 
 volumes:
   maildata:

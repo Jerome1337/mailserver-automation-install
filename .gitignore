@@ -8,7 +8,7 @@
 node_modules
 
 # Project
-config/
+/config
 docker-compose.env
 src/app/frontend/static/dist
 src/app/backend/rethinkdb_data

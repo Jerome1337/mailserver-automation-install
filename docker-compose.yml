@@ -41,7 +41,7 @@ services:
 
   # Rethink DB
   rethink:
-    image: rethinkdb:latest
+    build: docker/rethinkdb
     container_name: rethink
     ports:
       - 58080:8080

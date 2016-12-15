@@ -3,7 +3,7 @@
 docker-compose up -d
 
 # Setup RethinkDB
-docker exec -it rethink python <<EOF
+docker exec -i rethink python <<EOF
 import rethinkdb as r
 
 r.connect("localhost", 28015).repl()
@@ -21,24 +21,26 @@ exit()
 EOF
 
 # Install and setup backend then launch it
-cd src/app/backend
+mkdir src
+cd src && mkdir app
+cd app
 
-if [ ! -d node_modules ]; then
-    npm install
-fi
+git clone https://github.com/yoonic/atlas.git backend
+
+cd backend
+
+npm install
 
 SECRET="$(openssl rand -base64 32)"
 sed -i "s#JWT_KEY#JWT_KEY || \"${SECRET}\"#" config/development.js
 
-npm run dev
-
 # Install and setup front then launch it
-cd ../frontend
+cd ../
 
-if [ ! -d node_modules ]; then
-    npm install
-fi
+git clone https://github.com/yoonic/nicistore.git frontend
+
+cd frontend
+
+npm install
 
 sed -i "s/api.atlas.baseUrl/http://localhost:8000/v1/" config/client/development.js
-
-npm run dev

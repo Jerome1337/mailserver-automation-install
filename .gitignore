@@ -10,7 +10,4 @@ node_modules
 # Project
 /config
 docker-compose.env
-src/app/frontend/static/dist
-src/app/backend/rethinkdb_data
-src/app/backend/heapdump-*
-src/app/backend/uploads
+src/

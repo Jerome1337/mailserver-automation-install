@@ -1,0 +1,9 @@
+apps:
+  - script : 'npm'
+    args   : 'run dev'
+    cwd    : './backend'
+    name   : 'backend'
+  - script : 'npm'
+    args   : 'run dev'
+    cwd    : './frontend'
+    name   : 'frontend'

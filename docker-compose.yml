@@ -50,14 +50,11 @@ services:
 
   # NodeJS
   nodejs:
-    image: node:boron
+    build: docker/nodejs
     container_name: nodejs
-    volumes:
-      - ./src/app:/usr/src/app
-    working_dir: /usr/src/app
-    command: npm start
     ports:
-      - 50000:3000
+      - 53000:3000
+      - 55000:5000
     depends_on:
       - rethink
 

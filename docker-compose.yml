@@ -1,44 +1,6 @@
 version: '2'
 
 services:
-  # Debian
-  os:
-    image: debian
-    container_name: debian
-    volumes:
-      - .:/code
-      - ./docker/conf/nginx_vhost.conf:/etc/nginx/conf.d/app.conf:ro
-      - ./docker/conf/mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
-      - ./docker/conf/php.ini:/usr/local/etc/php/php.ini:ro
-
-#  nginx:
-#    image: nginx
-#    container_name: nginx
-#    ports:
-#      - 5000:5000
-#    volumes_from:
-#      - os
-#    links:
-#      - fpm
-#
-#  fpm:
-#    build: docker/php-fpm
-#    container_name: fpm
-#    volumes_from:
-#      - os
-#    links:
-#      - mysql
-#    env_file:
-#      - docker-compose.env
-#
-#  mysql:
-#    image: mysql:5.6
-#    container_name: mysql
-#    volumes_from:
-#      - os
-#    environment:
-#      MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
-
   # Rethink DB
   rethink:
     build: docker/rethinkdb
@@ -61,7 +23,7 @@ services:
   mailserver:
     image: hardware/mailserver
     container_name: mailserver
-    domainname: jeromepogeant.com
+    domainname: domain.tld                # Mail server FQDN & reverse = mail.domain.tld.
     hostname: mail
     ports:
       - "25:25"     # SMTP                - Required
@@ -72,16 +34,17 @@ services:
     environment:
       - DBPASS=postfix
     volumes:
-      - /mnt/docker/mail/mail:/var/mail
+      - /mnt/docker/mail:/var/mail
       - /mnt/docker/mail/opendkim:/etc/opendkim/keys
     depends_on:
       - mariadb
 
-  # Control panel
+  # Administration interface
+  # Configuration : https://github.com/hardware/mailserver/wiki/Postfixadmin-initial-configuration
   postfixadmin:
     image: hardware/postfixadmin
     container_name: postfixadmin
-    domainname: jeromepogeant.com
+    domainname: domain.tld
     hostname: mail
     environment:
       - DBPASS=postfix
@@ -90,6 +53,7 @@ services:
       - mariadb
 
   # Webmail
+  # Configuration : https://github.com/hardware/mailserver/wiki/Rainloop-initial-configuration
   rainloop:
     image: hardware/rainloop
     container_name: rainloop
@@ -99,26 +63,37 @@ services:
       - mailserver
       - mariadb
 
+  # Authoritative DNS server
+  # Configuration : https://github.com/hardware/mailserver/wiki/NSD-initial-configuration
+  nsd:
+    image: hardware/nsd-dnssec
+    container_name: nsd
+    ports:
+      - "553:53"
+      - "553:53/udp"
+    volumes:
+      - /mnt/docker/nsd/conf:/etc/nsd
+      - /mnt/docker/nsd/zones:/zones
+      - /mnt/docker/nsd/db:/var/db/nsd
+
   # Web server
   # Configuration : https://github.com/hardware/mailserver/wiki/Reverse-proxy-configuration
   nginx:
     image: wonderfall/boring-nginx
     container_name: nginx
     ports:
-      - "8000:8000"
+      - "80:8000"
       - "443:4430"
     volumes:
       - /mnt/docker/nginx/sites-enabled:/sites-enabled
       - /mnt/docker/nginx/conf:/conf.d
       - /mnt/docker/nginx/log:/var/log/nginx
       - /mnt/docker/nginx/certs:/certs
-    volumes_from:
-      - os
     depends_on:
       - postfixadmin
       - rainloop
 
-  # MySQL Database
+  # MariaDB
   mariadb:
     image: mariadb:10.1
     container_name: mariadb

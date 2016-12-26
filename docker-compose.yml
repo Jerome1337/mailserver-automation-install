@@ -26,11 +26,11 @@ services:
     domainname: domain.tld                # Mail server FQDN & reverse = mail.domain.tld.
     hostname: mail
     ports:
-      - "25:25"     # SMTP                - Required
-      - "143:143"   # IMAP       STARTTLS - Optional - For webmails/desktop clients
-      - "587:587"   # Submission STARTTLS - Optional - For webmails/desktop clients
-      - "993:993"   # IMAPS      SSL/TLS  - Optional - For webmails/desktop clients
-      - "4190:4190" # SIEVE      STARTTLS - Optional - Recommended for mail filtering
+      - 25:25     # SMTP                - Required
+      - 143:143   # IMAP       STARTTLS - Optional - For webmails/desktop clients
+      - 587:587   # Submission STARTTLS - Optional - For webmails/desktop clients
+      - 993:993   # IMAPS      SSL/TLS  - Optional - For webmails/desktop clients
+      - 4190:4190 # SIEVE      STARTTLS - Optional - Recommended for mail filtering
     environment:
       - DBPASS=postfix
     volumes:
@@ -69,8 +69,8 @@ services:
     image: hardware/nsd-dnssec
     container_name: nsd
     ports:
-      - "553:53"
-      - "553:53/udp"
+      - 553:53
+      - 553:53/udp
     volumes:
       - /mnt/docker/nsd/conf:/etc/nsd
       - /mnt/docker/nsd/zones:/zones
@@ -82,8 +82,8 @@ services:
     image: wonderfall/boring-nginx
     container_name: nginx
     ports:
-      - "80:8000"
-      - "443:4430"
+      - 8000:80
+      - 4430:443
     volumes:
       - /mnt/docker/nginx/sites-enabled:/sites-enabled
       - /mnt/docker/nginx/conf:/conf.d
@@ -112,7 +112,7 @@ services:
     links:
       - mariadb:db
     ports:
-      - '8100:80'
+      - 8100:80
     environment:
       - PMA_USER=root
       - PMA_PASSWORD=root

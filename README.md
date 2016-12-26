@@ -25,6 +25,11 @@ Ecommerce app and mail server automation install using Docker and Docker compose
 * ManageSieve server
 
 ## Usage
+To install / configure project dependencies and start the containers the first time :
+```
+$ sh start
+```
+
 To start the project containers use :
 ```
 $ docker-compose up

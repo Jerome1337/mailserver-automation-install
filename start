@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+docker-compose up -d
+
+# Setup RethinkDB
+docker exec -i rethink python <<EOF
+import rethinkdb as r
+
+r.connect('localhost', 28015).repl()
+
+r.branch(
+    r.db_list().contains('atlas'),
+    { 'dbs_created': 0 },
+    r.expr([
+        r.db_create('atlas'),
+        r.db('atlas').table_create('Carts'),
+        r.db('atlas').table_create('Checkouts'),
+        r.db('atlas').table_create('Collections'),
+        r.db('atlas').table_create('Contents'),
+        r.db('atlas').table_create('Orders'),
+        r.db('atlas').table_create('Products'),
+        r.db('atlas').table_create('Users')
+    ]).for_each(lambda item: item)
+).run()
+
+exit()
+EOF

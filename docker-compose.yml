@@ -23,7 +23,7 @@ services:
   mailserver:
     image: hardware/mailserver
     container_name: mailserver
-    domainname: domain.tld                # Mail server FQDN & reverse = mail.domain.tld.
+    domainname: domain.tld
     hostname: mail
     ports:
       - 25:25     # SMTP                - Required
@@ -72,9 +72,9 @@ services:
       - 553:53
       - 553:53/udp
     volumes:
-      - /mnt/docker/nsd/conf:/etc/nsd
-      - /mnt/docker/nsd/zones:/zones
-      - /mnt/docker/nsd/db:/var/db/nsd
+      - ./mnt/docker/nsd/conf:/etc/nsd
+      - ./mnt/docker/nsd/zones:/zones
+      - ./mnt/docker/nsd/db:/var/db/nsd
 
   # Web server
   # Configuration : https://github.com/hardware/mailserver/wiki/Reverse-proxy-configuration
